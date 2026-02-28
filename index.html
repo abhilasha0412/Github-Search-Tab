@@ -1,31 +1,60 @@
-<!--index.html-->
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" 
-          content="width=device-width,
-                    initial-scale=1.0" />
-    <link rel="stylesheet" href="style.css" />
-    <title>
-        Abhilasha Github
-    </title>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Abhilasha GitHub Finder</title>
+
+<link rel="stylesheet" href="style.css">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.0/axios.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </head>
 
-<body>
-    <form class="inputForm" id="userInput">
-        <h1>
-            Find Github Users
-            With Abhilasha
-        </h1>
-        <input type="text" 
-        id="inputBox" 
-        autocomplete="off" 
-        placeholder="Search a Github User" />
-    </form>
-    <main id="main"></main>
-    <script src="index.js"></script>
-</body>
+<body class="dark">
 
+<header>
+
+<h1>Find GitHub User With Abhilasha</h1>
+
+<button id="toggle">☀</button>
+
+</header>
+
+<form id="userInput">
+
+<input
+type="text"
+id="inputBox"
+placeholder="Search GitHub Username"
+autocomplete="off">
+
+<ul id="suggestions"></ul>
+
+</form>
+
+<section id="historySection">
+
+<h3>Recent Searches</h3>
+
+<ul id="historyList"></ul>
+
+</section>
+
+<main id="main"></main>
+
+<section id="chartSection">
+
+<canvas id="languageChart"></canvas>
+
+</section>
+
+<script src="index.js"></script>
+
+</body>
 </html>
