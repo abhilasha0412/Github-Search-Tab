@@ -1,91 +1,267 @@
-// project9.js
+const API="https://api.github.com/users/";
 
-let api =
-"https://api.github.com/users/";
+const main=document.getElementById("main");
+const form=document.getElementById("userInput");
+const search=document.getElementById("inputBox");
+const toggle=document.getElementById("toggle");
+const historyList=document.getElementById("historyList");
+const suggestions=document.getElementById("suggestions");
 
-let fetch =
-    document.createElement("script");
-fetch.src =
-`https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.0/axios.min.js`;
+let chart;
 
-fetch.integrity =
-`ha512-DZqqY3PiOvTP9HkjIWgjO6ouCbq+dxqWoJZ/Q+zPYNHmlnI2dQnbJ5bxAHpAMw+LXRm4D72EIRXzvcHQtE8/VQ==`;
+function loading(){
+main.innerHTML=`<div class="card">Loading profile...</div>`;
+}
 
-fetch.crossOrigin = "anonymous";
-document.head.appendChild(fetch);
-let main =
-    document.getElementById("main");
-let inputForm =
-    document.getElementById("userInput");
-let inputBox =
-    document.getElementById("inputBox");
-const userGetFunction = (name) => {
-    axios(api + name)
-        .then((response) => {
-            userCard(response.data);
-            repoGetFunction(name);})
-        .catch((err) => {
-            if (
-                err.response.status ==
-                404) {
-                errorFunction(
-"No profile with this username");}});}
-const repoGetFunction = (name) => {
-    axios(
-        api +
-        name +
-        "/repos?sort=created")
-        .then((response) => {
-            repoCardFunction(
-                response.data);})
-        .catch((err) => {
-            errorFunction(
-                "Problem fetching repos");});}
-const userCard = (user) => {
-    let id = user.name || user.login;
-    let info = user.bio
-        ? `<p>${user.bio}</p>`: "";
-    let cardElement = `
+async function getUser(username){
+
+loading();
+
+try{
+
+const {data}=await axios(API+username);
+
+createUserCard(data);
+
+saveHistory(username);
+
+getRepos(username);
+
+}
+catch{
+
+main.innerHTML=`<div class="card">User not found</div>`;
+
+}
+
+}
+
+async function getRepos(username){
+
+try{
+
+const {data}=await axios(API+username+"/repos");
+
+addRepos(data);
+
+createChart(data);
+
+}
+catch{
+
+console.log("repo error");
+
+}
+
+}
+
+function createUserCard(user){
+
+main.innerHTML=
+
+`
 <div class="card">
-<div>
-<img src="${user.avatar_url}" 
-     alt="${user.name}" 
-     class="avatar">
-</div>
+
+<img src="${user.avatar_url}" class="avatar">
 
 <div class="user-info">
-<h2>${id}</h2>${info}<ul>
-<li>${user.followers} <strong>Followers</strong></li>
-<li>${user.following} <strong>Following</strong></li>
-<li>${user.public_repos} <strong>Repos</strong></li>
+
+<h2>${user.name || user.login}</h2>
+
+<p>${user.bio || ""}</p>
+
+<p><b>Location:</b> ${user.location || "N/A"}</p>
+
+<p><b>Company:</b> ${user.company || "N/A"}</p>
+
+<ul>
+
+<li>${user.followers} Followers</li>
+
+<li>${user.following} Following</li>
+
+<li>${user.public_repos} Repos</li>
+
 </ul>
+
+<a href="${user.html_url}" target="_blank" class="profileBtn">
+Visit Profile
+</a>
+
 <div id="repos"></div>
+
 </div>
-</div>`;
-    main.innerHTML = cardElement}
 
-const errorFunction = (error) => {
-    let cardHTML = `
-<div class="card">
-<h1>${error}</h1>
-</div>`;
-    main.innerHTML = cardHTML}
+</div>
+`;
 
-const repoCardFunction = (repos) => {
-    let reposElement =
-        document.getElementById(
-            "repos");
-    for (let i = 0; i < 5 && i < repos.length; i++) {
-        let repo = repos[i];
-        let repoEl = document.createElement("a");
-        repoEl.classList.add("repo");
-        repoEl.href = repo.html_url;
-        repoEl.target = "_blank";
-        repoEl.innerText = repo.name;
-        reposElement.appendChild(repoEl);}}
-inputForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    let user = inputBox.value;
-    if (user) {
-        userGetFunction(user);
-        inputBox.value = "";}});
+}
+
+function addRepos(repos){
+
+const repoBox=document.getElementById("repos");
+
+repos
+.sort((a,b)=>b.stargazers_count-a.stargazers_count)
+.slice(0,5)
+.forEach(repo=>{
+
+let a=document.createElement("a");
+
+a.className="repo";
+
+a.href=repo.html_url;
+
+a.target="_blank";
+
+a.innerText=repo.name+" ⭐"+repo.stargazers_count;
+
+repoBox.appendChild(a);
+
+});
+
+}
+
+function createChart(repos){
+
+let languages={};
+
+repos.forEach(r=>{
+
+if(r.language){
+languages[r.language]=(languages[r.language]||0)+1;
+}
+
+});
+
+const ctx=document.getElementById("languageChart");
+
+if(chart){
+chart.destroy();
+}
+
+chart=new Chart(ctx,{
+type:"pie",
+data:{
+labels:Object.keys(languages),
+datasets:[{
+data:Object.values(languages)
+}]
+}
+});
+
+}
+
+form.addEventListener("submit",e=>{
+
+e.preventDefault();
+
+let user=search.value.trim();
+
+if(user){
+
+getUser(user);
+
+search.value="";
+
+}
+
+});
+
+function saveHistory(name){
+
+let history=JSON.parse(localStorage.getItem("history"))||[];
+
+history=history.filter(h=>h!==name);
+
+history.unshift(name);
+
+history=history.slice(0,5);
+
+localStorage.setItem("history",JSON.stringify(history));
+
+showHistory();
+
+}
+
+function showHistory(){
+
+historyList.innerHTML="";
+
+let history=JSON.parse(localStorage.getItem("history"))||[];
+
+history.forEach(user=>{
+
+let li=document.createElement("li");
+
+li.innerText=user;
+
+li.onclick=()=>getUser(user);
+
+historyList.appendChild(li);
+
+});
+
+}
+
+search.addEventListener("keyup",async()=>{
+
+let value=search.value;
+
+if(value.length<2){
+
+suggestions.innerHTML="";
+return;
+
+}
+
+const res=await axios(`https://api.github.com/search/users?q=${value}`);
+
+suggestions.innerHTML="";
+
+res.data.items.slice(0,5).forEach(u=>{
+
+let li=document.createElement("li");
+
+li.innerText=u.login;
+
+li.onclick=()=>{
+
+search.value=u.login;
+
+suggestions.innerHTML="";
+
+};
+
+suggestions.appendChild(li);
+
+});
+
+});
+
+if(localStorage.getItem("theme")==="light"){
+document.body.classList.remove("dark");
+toggle.innerText="Dark Mode";
+}
+
+toggle.onclick=()=>{
+
+document.body.classList.toggle("dark");
+
+if(document.body.classList.contains("dark")){
+
+localStorage.setItem("theme","dark");
+
+toggle.innerText="Light Mode";
+
+}else{
+
+localStorage.setItem("theme","light");
+
+toggle.innerText="Dark Mode";
+
+}
+
+};
+
+showHistory();
